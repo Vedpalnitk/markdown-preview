@@ -34,8 +34,8 @@ export const createNewNote = (initialTitle?: string, initialContent?: string): N
   return {
     id: crypto.randomUUID(),
     title: initialTitle || 'Untitled Note',
-    content: initialContent || '# New Note\n\nStart typing your markdown here...',
-    group: 'General',
+    content: initialContent || '',
+    group: 'GENERAL', // Default to Uppercase
     updatedAt: Date.now(),
   };
 };
