@@ -41,14 +41,15 @@ const cleanupContent = (text: string): string => {
 export const MarkdownView: React.FC<MarkdownViewProps> = ({ content, theme, zoom = 100 }) => {
   const isDark = theme === Theme.DARK;
   const processedContent = cleanupContent(content);
+  const baseFont = 12; // base px for preview
 
   return (
-    <div style={{ fontSize: `${zoom}%` }} className={`prose ${isDark ? 'prose-invert text-gray-100' : 'prose-slate text-slate-800'} max-w-none
-      prose-headings:font-semibold
+    <div style={{ fontSize: `${(zoom / 100) * baseFont}px` }} className={`prose ${isDark ? 'prose-invert text-gray-100' : 'prose-slate text-slate-800'} max-w-none leading-relaxed
+      prose-headings:font-semibold prose-headings:mt-2 prose-headings:mb-2
+      prose-p:my-2 prose-p:leading-relaxed
+      prose-ul:my-2 prose-ol:my-2 prose-li:marker:text-gray-400
       prose-a:text-blue-500
       prose-img:rounded-[32px]
-      prose-li:marker:text-gray-400
-      prose-p:leading-relaxed
       prose-pre:bg-transparent prose-pre:p-0 prose-pre:m-0 prose-pre:border-0
       prose-code:before:content-none prose-code:after:content-none
     `}>

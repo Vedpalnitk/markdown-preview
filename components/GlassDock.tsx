@@ -14,17 +14,18 @@ export const GlassDock: React.FC<GlassDockProps> = ({
   const isDark = theme === Theme.DARK;
 
   // Visuals
-  const glassClass = `backdrop-blur-[40px] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2)] border`;
+  const glassClass = `backdrop-blur-[26px] shadow-[0_18px_36px_-14px_rgba(0,0,0,0.35)]`;
   const themeClass = isDark 
-    ? 'bg-gray-900/60 border-white/10 shadow-black/40' 
-    : 'bg-white/70 border-white/60 shadow-blue-900/10';
+    ? 'bg-white/10 border border-white/15 ring-1 ring-white/10' 
+    : 'bg-white/80 border border-white/70 ring-1 ring-white/70 shadow-blue-200/30';
 
   return (
     <button 
       onClick={onToggleList}
-      className={`fixed bottom-8 left-8 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group ${glassClass} ${themeClass}`}
+      className={`fixed bottom-8 left-8 z-50 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group ${glassClass} ${themeClass}`}
       title="Open Library"
     >
+      <span className="absolute inset-0 rounded-full border border-white/10 opacity-60 group-hover:opacity-90 transition-opacity" />
       <Menu 
         size={24} 
         strokeWidth={2} 
