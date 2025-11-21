@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Note, ViewMode, Theme } from './types';
 import { getNotes, saveNote, createNewNote, deleteNote } from './services/storageService';
-import { polishMarkdown } from './services/geminiService';
 import { MarkdownView } from './components/MarkdownView';
 import { GlassDock } from './components/GlassDock';
 import { NoteList } from './components/NoteList';
-import { Loader2, Folder, Sun, Moon, Sparkles, Eye, Pencil, FolderPlus, X, Check, Maximize2, Minimize2 } from 'lucide-react';
+import { Loader2, Folder, Sun, Moon, Eye, Pencil, FolderPlus, X, Check, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
 
 // Declare html2pdf global
 declare const html2pdf: any;
@@ -16,9 +15,9 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.EDIT);
   const [theme, setTheme] = useState<Theme>(Theme.LIGHT);
   const [isListOpen, setIsListOpen] = useState(false);
-  const [isAiLoading, setIsAiLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [zoom, setZoom] = useState(70);
   
   // Folder Creation Modal State
   const [showFolderDialog, setShowFolderDialog] = useState(false);
@@ -86,27 +85,18 @@ const App: React.FC = () => {
   };
   
   const openFolderDialog = () => {
-    setNewFolderName('');
-    setShowFolderDialog(true);
-  };
+    // Create a new folder directly with a default name
+    const folderCount = notes.filter(n => n.group?.startsWith('NEW FOLDER')).length;
+    const folderName = folderCount === 0 ? 'NEW FOLDER' : `NEW FOLDER ${folderCount + 1}`;
 
-  const confirmFolderCreation = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!newFolderName || !newFolderName.trim()) {
-      setShowFolderDialog(false);
-      return;
-    }
-
-    const upperName = newFolderName.trim().toUpperCase();
-    const newNote = createNewNote('Start Here', ''); 
-    newNote.group = upperName;
+    const newNote = createNewNote('Start Here', '');
+    newNote.group = folderName;
 
     setNotes(prev => [newNote, ...prev]);
     saveNote(newNote);
     setActiveNoteId(newNote.id);
     setViewMode(ViewMode.EDIT);
     setIsListOpen(true);
-    setShowFolderDialog(false);
   };
 
   const handleDeleteNote = (id: string) => {
@@ -118,14 +108,6 @@ const App: React.FC = () => {
     }
   };
 
-  const handleAiPolish = async () => {
-    if (!activeNote) return;
-    setIsAiLoading(true);
-    const polished = await polishMarkdown(activeNote.content);
-    updateActiveNote(polished);
-    setIsAiLoading(false);
-    setViewMode(ViewMode.PREVIEW); 
-  };
 
   const handleImportClick = () => {
     if (fileInputRef.current) {
@@ -200,7 +182,7 @@ const App: React.FC = () => {
   const isDark = theme === Theme.DARK;
 
   // Apple-style Liquid Glass Gradient Backgrounds
-  const bgGradient = isDark 
+  const bgGradient = isDark
     ? "bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-slate-900 via-black to-slate-950"
     : "bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-100 via-white to-blue-50";
 
@@ -216,57 +198,6 @@ const App: React.FC = () => {
         className="hidden" 
       />
 
-      {/* Folder Creation Modal */}
-      {showFolderDialog && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/60 backdrop-blur-md">
-          <form 
-            onSubmit={confirmFolderCreation}
-            className={`w-full max-w-sm p-6 rounded-[36px] border shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] backdrop-blur-3xl transition-all transform scale-100 ${
-              isDark 
-                ? 'bg-gray-900/80 border-white/10 ring-1 ring-white/5' 
-                : 'bg-white/80 border-white/60 ring-1 ring-white/40'
-            }`}
-          >
-            <div className="flex items-center gap-4 mb-8">
-              <div className={`p-3.5 rounded-2xl ${isDark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-50 text-blue-600'}`}>
-                <FolderPlus size={26} />
-              </div>
-              <h3 className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>New Folder</h3>
-            </div>
-            
-            <input
-              ref={folderInputRef}
-              type="text"
-              placeholder="FOLDER NAME"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value.toUpperCase())}
-              className={`w-full p-4 mb-8 rounded-2xl outline-none font-bold text-center tracking-[0.2em] uppercase transition-all ${
-                isDark 
-                  ? 'bg-black/40 text-white border-white/10 focus:border-blue-500/50 placeholder-white/10 shadow-inner' 
-                  : 'bg-slate-50 text-slate-900 border-transparent focus:bg-white focus:ring-2 focus:ring-blue-200 placeholder-slate-300 shadow-inner'
-              } border-2`}
-            />
-            
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowFolderDialog(false)}
-                className={`flex-1 py-3.5 rounded-2xl font-semibold transition-colors ${
-                  isDark ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex-1 py-3.5 rounded-2xl font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40"
-              >
-                Create
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {isExporting && activeNote && (
         <div className="absolute top-0 left-0 z-[9999] bg-white w-full min-h-screen">
@@ -295,74 +226,77 @@ const App: React.FC = () => {
 
       <button
         onClick={() => setTheme(theme === Theme.LIGHT ? Theme.DARK : Theme.LIGHT)}
-        className={`fixed top-6 right-6 z-50 p-3.5 rounded-full shadow-lg backdrop-blur-xl border transition-all duration-300 hover:scale-110 active:scale-95 ${
-          isDark 
-            ? 'bg-gray-900/40 text-blue-200 border-white/10 shadow-black/30 hover:text-white hover:bg-gray-800/60' 
-            : 'bg-white/60 text-blue-600 border-white/40 shadow-blue-200/30 hover:text-blue-800 hover:bg-white/80'
+        className={`fixed top-6 right-6 z-50 p-4 rounded-[24px] shadow-xl backdrop-blur-2xl border transition-all duration-300 hover:scale-110 active:scale-95 ${
+          isDark
+            ? 'bg-gradient-to-br from-slate-900/50 to-black/50 text-blue-200 border-white/20 shadow-black/50 hover:text-white hover:from-slate-800/60 hover:to-black/60 ring-1 ring-white/10'
+            : 'bg-gradient-to-br from-white/80 to-blue-50/60 text-blue-600 border-white/60 shadow-blue-300/40 hover:text-blue-800 hover:from-white/90 hover:to-blue-50/80 ring-1 ring-white/40'
         }`}
       >
         {theme === Theme.DARK ? <Sun size={22} /> : <Moon size={22} />}
       </button>
 
-      {activeNote && (
-        <button
-          onClick={handleAiPolish}
-          disabled={isAiLoading}
-          className={`fixed bottom-8 right-8 z-50 p-4 rounded-[28px] shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl border transition-all duration-500 hover:scale-105 active:scale-95 flex items-center gap-3 group ${
-            isDark 
-              ? 'bg-blue-600/20 text-blue-300 border-blue-400/30 hover:bg-blue-600/30 hover:text-blue-100 hover:border-blue-400/50 shadow-blue-900/20' 
-              : 'bg-white/80 text-blue-600 border-white/60 hover:bg-white hover:text-blue-700 hover:shadow-blue-300/30'
-          } ${isAiLoading ? 'cursor-wait opacity-80' : ''}`}
-        >
-          <Sparkles size={24} className={isAiLoading ? 'animate-spin' : 'fill-current'} />
-          <span className="max-w-0 overflow-hidden group-hover:max-w-[100px] transition-all duration-500 whitespace-nowrap font-semibold tracking-wide">
-            {isAiLoading ? 'Polishing...' : 'AI Polish'}
-          </span>
-        </button>
-      )}
 
       {!isExporting && (
         <main className={`h-screen w-full overflow-y-auto pt-10 pb-32 px-4 md:px-0 transition-all duration-500 ${isListOpen && !isFullScreen ? 'md:pl-72' : ''}`}>
           <div className={`${isFullScreen ? 'max-w-6xl' : 'max-w-4xl'} mx-auto transition-all duration-500`}>
             {activeNote ? (
-              <div className={`backdrop-blur-[60px] rounded-[48px] shadow-2xl border transition-all duration-500 min-h-[85vh] p-8 md:p-12 mb-10 relative
-                ${isDark 
-                  ? 'bg-black/95 border-white/10 text-blue-50 shadow-black/50 ring-1 ring-white/5' 
-                  : 'bg-white/60 border-white/60 text-slate-800 shadow-blue-100/40 ring-1 ring-white/40'
+              <div className={`backdrop-blur-3xl rounded-[48px] shadow-2xl border transition-all duration-500 min-h-[85vh] mb-10 relative overflow-hidden
+                ${isDark
+                  ? 'bg-gradient-to-br from-black/40 via-slate-900/30 to-black/40 border-white/20 text-blue-50 shadow-black/50 ring-1 ring-white/10'
+                  : 'bg-gradient-to-br from-white/70 via-blue-50/40 to-white/70 border-white/80 text-slate-800 shadow-blue-200/50 ring-1 ring-white/60'
                 }`}>
-                
-                <div className="flex flex-col gap-6 mb-10 border-b border-white/10 pb-8 relative">
+
+                <div className={`sticky top-0 z-10 flex flex-col gap-6 border-b border-white/10 pb-6 pt-8 px-8 md:px-12 backdrop-blur-2xl ${isDark ? 'bg-black/50' : 'bg-white/50'}`}>
                   <div className="flex justify-between items-start">
                     <div className="flex flex-col gap-2">
                        <div className={`flex items-center gap-2 text-sm transition-opacity opacity-80 hover:opacity-100 font-medium tracking-wide ${isDark ? 'text-blue-300' : 'text-blue-600'}`}>
                         <Folder size={16} />
-                        <input 
-                          type="text" 
-                          value={activeNote.group || 'GENERAL'} 
+                        <input
+                          type="text"
+                          value={activeNote.group || 'GENERAL'}
                           onChange={(e) => updateActiveGroup(e.target.value)}
                           className="bg-transparent border-b-2 border-transparent hover:border-current focus:border-current outline-none transition-all w-40 uppercase tracking-wider placeholder-current"
                           placeholder="GROUP"
                         />
                       </div>
                       <div className={`text-xs font-medium ${isDark ? 'text-blue-400/40' : 'text-blue-900/30'}`}>
-                        {isAiLoading ? '✨ AI is working...' : 'Last edited just now'}
+                        Last edited just now
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button 
+                      <button
+                        onClick={() => setZoom(Math.max(50, zoom - 10))}
+                        className={`p-3 rounded-[18px] backdrop-blur-xl border transition-all duration-300 hover:scale-105 active:scale-95 ${
+                          isDark ? 'bg-white/10 hover:bg-white/15 text-blue-300 border-white/20 ring-1 ring-white/10' : 'bg-white/70 hover:bg-white/90 text-blue-600 border-white/60 ring-1 ring-white/40 shadow-sm'
+                        }`}
+                        title="Zoom Out"
+                      >
+                        <ZoomOut size={20} />
+                      </button>
+                      <span className={`text-sm font-medium px-2 ${isDark ? 'text-blue-300' : 'text-blue-600'}`}>{zoom}%</span>
+                      <button
+                        onClick={() => setZoom(Math.min(200, zoom + 10))}
+                        className={`p-3 rounded-[18px] backdrop-blur-xl border transition-all duration-300 hover:scale-105 active:scale-95 ${
+                          isDark ? 'bg-white/10 hover:bg-white/15 text-blue-300 border-white/20 ring-1 ring-white/10' : 'bg-white/70 hover:bg-white/90 text-blue-600 border-white/60 ring-1 ring-white/40 shadow-sm'
+                        }`}
+                        title="Zoom In"
+                      >
+                        <ZoomIn size={20} />
+                      </button>
+                      <button
                         onClick={() => setIsFullScreen(!isFullScreen)}
-                        className={`p-2.5 rounded-full transition-colors duration-300 ${
-                          isDark ? 'bg-white/5 hover:bg-white/10 text-blue-300' : 'bg-blue-50/50 hover:bg-blue-100 text-blue-600'
+                        className={`p-3 rounded-[18px] backdrop-blur-xl border transition-all duration-300 hover:scale-105 active:scale-95 ${
+                          isDark ? 'bg-white/10 hover:bg-white/15 text-blue-300 border-white/20 ring-1 ring-white/10' : 'bg-white/70 hover:bg-white/90 text-blue-600 border-white/60 ring-1 ring-white/40 shadow-sm'
                         }`}
                         title="Toggle Full Screen"
                       >
                         {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
                       </button>
-                      <button 
+                      <button
                         onClick={() => setViewMode(viewMode === ViewMode.EDIT ? ViewMode.PREVIEW : ViewMode.EDIT)}
-                        className={`p-2.5 rounded-full transition-colors duration-300 ${
-                          isDark ? 'bg-white/5 hover:bg-white/10 text-blue-300' : 'bg-blue-50/50 hover:bg-blue-100 text-blue-600'
+                        className={`p-3 rounded-[18px] backdrop-blur-xl border transition-all duration-300 hover:scale-105 active:scale-95 ${
+                          isDark ? 'bg-white/10 hover:bg-white/15 text-blue-300 border-white/20 ring-1 ring-white/10' : 'bg-white/70 hover:bg-white/90 text-blue-600 border-white/60 ring-1 ring-white/40 shadow-sm'
                         }`}
                         title="Toggle View Mode"
                       >
@@ -371,27 +305,30 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  <input 
+                  <input
                     type="text"
                     value={activeNote.title}
                     disabled
-                    className={`bg-transparent text-5xl font-bold outline-none truncate w-full bg-clip-text leading-tight tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}
+                    className={`bg-transparent text-2xl font-bold outline-none truncate w-full bg-clip-text leading-tight tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}
                   />
                 </div>
 
-                {viewMode === ViewMode.EDIT ? (
-                  <textarea 
-                    className={`w-full h-[65vh] bg-transparent outline-none resize-none font-mono text-lg leading-relaxed placeholder:opacity-30 selection:bg-blue-500/30 ${isDark ? 'text-gray-200' : 'text-slate-700'}`}
-                    placeholder="Start typing your markdown..."
-                    value={activeNote.content}
-                    onChange={(e) => updateActiveNote(e.target.value)}
-                    spellCheck={false}
-                  />
-                ) : (
-                  <div className="min-h-[65vh]" id="markdown-content-area">
-                    <MarkdownView content={activeNote.content} theme={theme} />
-                  </div>
-                )}
+                <div className="p-8 md:p-12">
+                  {viewMode === ViewMode.EDIT ? (
+                    <textarea
+                      style={{ fontSize: `${zoom}%` }}
+                      className={`w-full h-[65vh] bg-transparent outline-none resize-none font-mono text-xs leading-relaxed placeholder:opacity-30 selection:bg-blue-500/30 ${isDark ? 'text-gray-200' : 'text-slate-700'}`}
+                      placeholder="Start typing your markdown..."
+                      value={activeNote.content}
+                      onChange={(e) => updateActiveNote(e.target.value)}
+                      spellCheck={false}
+                    />
+                  ) : (
+                    <div className="min-h-[65vh]" id="markdown-content-area">
+                      <MarkdownView content={activeNote.content} theme={theme} zoom={zoom} />
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className={`flex flex-col items-center justify-center h-[80vh] text-center opacity-40 ${isDark ? 'text-blue-200' : 'text-slate-500'}`}>

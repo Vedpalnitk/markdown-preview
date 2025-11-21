@@ -5,11 +5,14 @@ import remarkGfm from 'remark-gfm';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Theme } from '../types';
 
 interface MarkdownViewProps {
   content: string;
   theme: Theme;
+  zoom?: number;
 }
 
 // Helper to clean up raw text before markdown parsing
@@ -35,15 +38,15 @@ const cleanupContent = (text: string): string => {
   return cleaned;
 };
 
-export const MarkdownView: React.FC<MarkdownViewProps> = ({ content, theme }) => {
+export const MarkdownView: React.FC<MarkdownViewProps> = ({ content, theme, zoom = 100 }) => {
   const isDark = theme === Theme.DARK;
   const processedContent = cleanupContent(content);
 
   return (
-    <div className={`prose ${isDark ? 'prose-invert' : 'prose-slate'} max-w-none 
-      prose-headings:font-semibold 
-      prose-a:text-blue-500 
-      prose-img:rounded-[32px] 
+    <div style={{ fontSize: `${zoom}%` }} className={`prose ${isDark ? 'prose-invert text-gray-100' : 'prose-slate text-slate-800'} max-w-none
+      prose-headings:font-semibold
+      prose-a:text-blue-500
+      prose-img:rounded-[32px]
       prose-li:marker:text-gray-400
       prose-p:leading-relaxed
       prose-pre:bg-transparent prose-pre:p-0 prose-pre:m-0 prose-pre:border-0
@@ -71,10 +74,11 @@ export const MarkdownView: React.FC<MarkdownViewProps> = ({ content, theme }) =>
             return (
               <SyntaxHighlighter
                 language={language}
+                style={isDark ? oneDark : oneLight}
                 PreTag="div"
                 className={`not-prose rounded-[32px] border shadow-sm my-8 backdrop-blur-md ${
-                  isDark 
-                    ? 'bg-black/40 border-white/10' 
+                  isDark
+                    ? 'bg-black/40 border-white/10'
                     : 'bg-white/60 border-black/5'
                 }`}
                 codeTagProps={{
@@ -84,8 +88,8 @@ export const MarkdownView: React.FC<MarkdownViewProps> = ({ content, theme }) =>
                     fontFamily: 'inherit',
                   }
                 }}
-                customStyle={{ 
-                  margin: '0', 
+                customStyle={{
+                  margin: '0',
                   padding: '1.5rem',
                   background: 'transparent',
                   fontSize: '0.9em',
