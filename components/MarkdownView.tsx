@@ -44,11 +44,12 @@ export const MarkdownView: React.FC<MarkdownViewProps> = ({ content, theme, zoom
   const baseFont = 12; // base px for preview
 
   return (
-    <div style={{ fontSize: `${(zoom / 100) * baseFont}px` }} className={`prose ${isDark ? 'prose-invert text-gray-100' : 'prose-slate text-slate-800'} max-w-none leading-relaxed
-      prose-headings:font-semibold prose-headings:mt-2 prose-headings:mb-2
+    <div style={{ fontSize: `${(zoom / 100) * baseFont}px` }} className={`prose ${isDark ? 'prose-invert text-gray-100' : 'prose-slate text-[#001226]'} max-w-none leading-relaxed
+      prose-headings:font-semibold prose-headings:mt-2 prose-headings:mb-2 prose-headings:tracking-tight
       prose-p:my-2 prose-p:leading-relaxed
       prose-ul:my-2 prose-ol:my-2 prose-li:marker:text-gray-400
-      prose-a:text-blue-500
+      prose-a:text-[#00D4FF] prose-a:no-underline hover:prose-a:text-[#00FFFF]
+      prose-strong:text-current prose-blockquote:border-l-[6px] prose-blockquote:border-[#00D4FF]/40 prose-blockquote:bg-white/5
       prose-img:rounded-[32px]
       prose-pre:bg-transparent prose-pre:p-0 prose-pre:m-0 prose-pre:border-0
       prose-code:before:content-none prose-code:after:content-none
@@ -79,8 +80,8 @@ export const MarkdownView: React.FC<MarkdownViewProps> = ({ content, theme, zoom
                 PreTag="div"
                 className={`not-prose rounded-[32px] border shadow-sm my-8 backdrop-blur-md ${
                   isDark
-                    ? 'bg-black/40 border-white/10'
-                    : 'bg-white/60 border-black/5'
+                    ? 'bg-[rgba(0,18,38,0.65)] border-[#0d243c] shadow-[0_18px_36px_-24px_rgba(0,0,0,0.8)]'
+                    : 'bg-[rgba(255,255,255,0.9)] border-[#E5E7EB] shadow-[0_18px_36px_-24px_rgba(0,82,204,0.18)]'
                 }`}
                 codeTagProps={{
                   style: {
@@ -106,8 +107,8 @@ export const MarkdownView: React.FC<MarkdownViewProps> = ({ content, theme, zoom
               <code 
                 className={`not-prose px-2 py-1 rounded-xl font-mono text-sm font-medium border align-middle whitespace-pre-wrap break-words
                   ${isDark 
-                    ? 'bg-white/10 text-sky-200 border-white/10' 
-                    : 'bg-slate-100 text-pink-600 border-black/5'
+                    ? 'bg-white/10 text-[#00E8FF] border-[#0d243c]' 
+                    : 'bg-[#F9FDFF] text-[#0052CC] border-[#E5E7EB] shadow-[0_10px_22px_-16px_rgba(0,82,204,0.35)]'
                   } ${className || ''}`} 
                 {...props}
               >

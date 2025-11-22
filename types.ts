@@ -4,6 +4,7 @@ export interface Note {
   content: string;
   group: string;
   updatedAt: number;
+  deletedAt?: number;
 }
 
 export enum ViewMode {

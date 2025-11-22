@@ -12,24 +12,19 @@ export const GlassDock: React.FC<GlassDockProps> = ({
   theme
 }) => {
   const isDark = theme === Theme.DARK;
-
-  // Visuals
-  const glassClass = `backdrop-blur-[26px] shadow-[0_18px_36px_-14px_rgba(0,0,0,0.35)]`;
-  const themeClass = isDark 
-    ? 'bg-white/10 border border-white/15 ring-1 ring-white/10' 
-    : 'bg-white/80 border border-white/70 ring-1 ring-white/70 shadow-blue-200/30';
+  const buttonTone = isDark ? 'liquid-btn liquid-btn-dark text-white' : 'liquid-btn liquid-btn-light text-[#0B1B40]';
 
   return (
     <button 
       onClick={onToggleList}
-      className={`fixed bottom-8 left-8 z-50 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group ${glassClass} ${themeClass}`}
+      className={`fixed bottom-8 left-8 z-50 w-16 h-16 rounded-full ${buttonTone} liquid-btn-icon text-lg hover:scale-110 active:scale-95 group`}
       title="Open Library"
     >
-      <span className="absolute inset-0 rounded-full border border-white/10 opacity-60 group-hover:opacity-90 transition-opacity" />
+      <span className="absolute inset-0 rounded-full border border-white/10 opacity-60 group-hover:opacity-95 transition-opacity" />
       <Menu 
         size={24} 
         strokeWidth={2} 
-        className={`transition-colors duration-300 ${isDark ? 'text-blue-300 group-hover:text-white' : 'text-blue-600 group-hover:text-blue-800'}`} 
+        className={`transition-colors duration-300 ${isDark ? 'text-[#00E8FF] group-hover:text-white' : 'text-[#0052CC] group-hover:text-[#001226]'}`} 
       />
     </button>
   );

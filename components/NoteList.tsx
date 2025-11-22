@@ -12,10 +12,12 @@ interface NoteListProps {
   onNewFolder: () => void;
   onImport: () => void;
   onExport: () => void;
+  onOpenTrash: () => void;
   isOpen: boolean;
   onClose: () => void;
   theme: Theme;
   pinned?: boolean;
+  searchQuery?: string;
 }
 
 export const NoteList: React.FC<NoteListProps> = ({
@@ -27,10 +29,12 @@ export const NoteList: React.FC<NoteListProps> = ({
   onNewFolder,
   onImport,
   onExport,
+  onOpenTrash,
   isOpen,
   onClose,
   theme,
-  pinned = false
+  pinned = false,
+  searchQuery = ''
 }) => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [libraryTitle, setLibraryTitle] = useState(() => localStorage.getItem('glassnote_library_title') || 'GlassNote AI');
@@ -65,26 +69,28 @@ export const NoteList: React.FC<NoteListProps> = ({
   };
 
   const isDark = theme === Theme.DARK;
+  const liquidButtonTone = isDark ? 'liquid-btn liquid-btn-dark text-white' : 'liquid-btn liquid-btn-light text-[#0B1B40]';
   
   // Liquid Glass Gradient for Sidebar (boosted contrast to stay visible when pinned)
   const bgClass = isDark 
-    ? 'bg-[linear-gradient(180deg,_#0f1118_0%,_#0a0c12_100%)] border-r-white/5 ring-1 ring-white/5'
-    : 'bg-[linear-gradient(180deg,_#f8f9fd_0%,_#eef1f7_100%)] border-r-slate-200 ring-1 ring-white/50';
+    ? 'bg-[linear-gradient(180deg,_rgba(0,18,38,0.95)_0%,_rgba(0,26,51,0.97)_100%)] border-r-white/10 ring-1 ring-white/10'
+    : 'bg-[linear-gradient(180deg,_rgba(255,255,255,0.92)_0%,_rgba(255,255,255,0.72)_100%)] border-r-white/60 ring-1 ring-white/70';
   
-  const textClass = isDark ? 'text-blue-50' : 'text-slate-800';
+  const textClass = isDark ? 'text-blue-50' : 'text-[#001226]';
   
   // Colors
-  const iconBaseClass = isDark ? 'text-blue-300/80 drop-shadow-[0_2px_6px_rgba(59,130,246,0.45)]' : 'text-blue-600/80 drop-shadow-[0_2px_8px_rgba(59,130,246,0.35)]';
-  const iconHoverClass = isDark ? 'group-hover:text-blue-300' : 'group-hover:text-blue-600';
+  const iconBaseClass = isDark ? 'text-[#00E8FF] drop-shadow-[0_2px_8px_rgba(0,232,255,0.35)]' : 'text-[#0052CC] drop-shadow-[0_2px_10px_rgba(0,82,204,0.28)]';
+  const iconHoverClass = isDark ? 'group-hover:text-[#00FFFF]' : 'group-hover:text-[#1A8CFF]';
   const activeItemClass = isDark
-    ? 'bg-white/8 ring-1 ring-white/12 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.7)] rounded-[12px]'
-    : 'bg-white/85 ring-1 ring-blue-100 shadow-[0_12px_30px_-14px_rgba(59,130,246,0.35)] rounded-[12px]';
+    ? 'text-white font-semibold bg-white/10 shadow-[0_10px_26px_-16px_rgba(0,0,0,0.7)]'
+    : 'text-[#0052CC] font-semibold bg-white shadow-[0_10px_26px_-16px_rgba(0,82,204,0.3)]';
 
-  const actionBtnClass = `flex items-center justify-center p-2.5 rounded-full transition-all duration-300 group relative overflow-hidden hover:-translate-y-0.5 active:scale-95 ${
-    isDark 
-      ? 'bg-gradient-to-br from-white/15 via-blue-400/10 to-white/5 text-blue-100 shadow-[0_12px_32px_-16px_rgba(0,0,0,0.65)]'
-      : 'bg-gradient-to-br from-white via-blue-50/70 to-white text-blue-700 shadow-[0_12px_32px_-16px_rgba(59,130,246,0.35)]'
-  }`;
+  const listDividerClass = isDark ? 'divide-white/10' : 'divide-[#C4D9FF]/60';
+  const hoverItemClass = isDark
+    ? 'hover:bg-white/8 hover:border-white/12 hover:shadow-[0_12px_30px_-18px_rgba(0,0,0,0.65)]'
+    : 'hover:bg-white/95 hover:border-[#C4D9FF] hover:shadow-[0_12px_28px_-18px_rgba(0,82,204,0.25)]';
+
+  const actionBtnClass = `${liquidButtonTone} liquid-btn-icon h-12 w-12 text-base`;
 
   return (
     <>
@@ -101,40 +107,44 @@ export const NoteList: React.FC<NoteListProps> = ({
         )}
       </AnimatePresence>
 
-      <div className={`${pinned ? 'relative h-[calc(100vh-96px)] w-72 rounded-2xl overflow-hidden' : 'fixed inset-y-0 left-0 w-72'} z-40 shadow-[0_0_40px_-14px_rgba(0,0,0,0.45)] transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) ${
+      <div className={`${pinned ? 'relative h-[calc(100vh-128px)] w-72 rounded-[26px]' : 'fixed inset-y-0 left-0 w-[85%] max-w-sm rounded-[26px]'} z-40 shadow-[0_0_48px_-16px_rgba(0,0,0,0.55)] transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) ${
         pinned ? 'translate-x-0' : (isOpen ? 'translate-x-0' : '-translate-x-full')
-      } ${bgClass} ${textClass} border-r backdrop-blur-[28px] flex flex-col relative overflow-hidden`}>
-        <div className="pointer-events-none absolute inset-x-4 top-0 h-40 rounded-3xl blur-3xl opacity-60 bg-gradient-to-b from-blue-500/30 via-transparent to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+      } ${bgClass} ${textClass} backdrop-blur-[32px] flex flex-col relative overflow-hidden`}>
+        <div className={`pointer-events-none absolute inset-x-4 top-0 h-40 rounded-3xl blur-3xl opacity-70 ${
+          isDark ? 'bg-[radial-gradient(circle_at_30%_10%,rgba(0,240,200,0.18),transparent)]' : 'bg-[radial-gradient(circle_at_30%_10%,rgba(0,212,255,0.18),transparent)]'
+        }`} />
+        <div className={`pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t ${
+          isDark ? 'from-black/25 via-transparent to-transparent' : 'from-[#C4D9FF]/40 via-transparent to-transparent'
+        }`} />
         
         {/* Header Area with Editable Title & Logo */}
         <div className="px-3 pt-4 pb-3 z-10">
-          <div className={`flex items-center justify-between gap-3 px-3 py-2 rounded-full backdrop-blur-2xl ${
-            isDark ? 'bg-white/5 shadow-[0_10px_30px_-16px_rgba(0,0,0,0.7)]' : 'bg-white/85 shadow-[0_10px_30px_-16px_rgba(59,130,246,0.2)]'
+          <div className={`flex items-center justify-between gap-3 px-3 py-2 rounded-full backdrop-blur-[18px] ${
+            isDark ? 'bg-[linear-gradient(140deg,_rgba(0,18,38,0.9),_rgba(0,0,0,0.6))] shadow-[0_12px_30px_-16px_rgba(0,0,0,0.75)]' : 'bg-[linear-gradient(140deg,_rgba(255,255,255,0.9),_rgba(255,255,255,0.65))] shadow-[0_12px_30px_-16px_rgba(0,82,204,0.2)]'
           }`}>
             <div className="flex items-center gap-2 overflow-hidden">
-              <div className={`shrink-0 p-2.5 rounded-full bg-gradient-to-br shadow-md backdrop-blur-md ${
+              <div className={`shrink-0 p-2.5 rounded-full shadow-md backdrop-blur-md ${
                 isDark 
-                  ? 'from-[#36415d] via-[#253149] to-[#131a27] shadow-black/40' 
-                  : 'from-white via-blue-50 to-blue-100 shadow-blue-200/30'
+                  ? 'bg-[linear-gradient(160deg,_#0A0F1A,_#002244,_#0052CC)] shadow-black/40' 
+                  : 'bg-[linear-gradient(145deg,_#F9FDFF,_#C4D9FF,_rgba(255,255,255,0.8))] shadow-blue-200/30'
               }`}>
-                <Bot size={18} strokeWidth={2.4} className={`${isDark ? 'text-cyan-200' : 'text-blue-700'} drop-shadow-[0_2px_10px_rgba(59,130,246,0.55)]`} />
+                <Bot size={18} strokeWidth={2.4} className={`${isDark ? 'text-[#00E8FF]' : 'text-[#0052CC]'} drop-shadow-[0_2px_10px_rgba(0,212,255,0.55)]`} />
               </div>
               <div className="flex flex-col">
-                <span className={`text-[10px] uppercase tracking-[0.2em] ${isDark ? 'text-slate-300/70' : 'text-slate-600/80'}`}>Library</span>
+                <span className={`text-[10px] uppercase tracking-[0.2em] ${isDark ? 'text-slate-300/70' : 'text-slate-600/90'}`}>Library</span>
                 <input 
                   type="text" 
                   value={libraryTitle}
                   onChange={handleTitleChange}
                   className={`bg-transparent text-base font-semibold outline-none w-full truncate placeholder-current tracking-tight ${
-                    isDark ? 'text-white focus:text-slate-100' : 'text-slate-800 focus:text-blue-700'
+                    isDark ? 'text-white focus:text-slate-100' : 'text-[#001226] focus:text-[#0052CC]'
                   }`}
                   spellCheck={false}
                 />
               </div>
             </div>
             {!pinned && (
-              <button onClick={onClose} className={`shrink-0 p-2 rounded-full transition-colors border ${isDark ? 'border-white/10 hover:bg-white/10' : 'border-white/60 hover:bg-black/5'}`}>
+              <button onClick={onClose} className={`${liquidButtonTone} liquid-btn-icon shrink-0 h-10 w-10`}>
                 <X size={18} className={iconBaseClass} />
               </button>
             )}
@@ -153,21 +163,19 @@ export const NoteList: React.FC<NoteListProps> = ({
                   {/* Group Header */}
                   <button
                     onClick={() => toggleGroup(groupName)}
-                    className={`flex items-center gap-2 px-2.5 py-2 rounded-[10px] transition-all duration-300 ${
-                      isDark ? 'hover:bg-white/5' : 'hover:bg-blue-50'
-                    }`}
+                    className={`${liquidButtonTone} liquid-btn-pill flex items-center gap-2 px-3 py-2 rounded-[14px] transition-all duration-300`}
                   >
                     <span className={`${iconBaseClass} ${iconHoverClass} transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`}>
                       <ChevronRight size={11} />
                     </span>
                     <Folder size={12} className={`${iconBaseClass} ${iconHoverClass}`} />
                     <span className={`font-semibold text-[10px] flex-1 text-left truncate transition-colors uppercase tracking-[0.16em] ${
-                      isDark ? 'text-gray-300 group-hover:text-white' : 'text-slate-600 group-hover:text-blue-700'
+                      isDark ? 'text-gray-300 group-hover:text-white' : 'text-slate-600 group-hover:text-[#0052CC]'
                     }`}>
                       {groupName}
                     </span>
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                      isDark ? 'bg-white/5 text-gray-200 border border-white/10' : 'bg-white/80 text-slate-600 border border-white/60 shadow-sm'
+                      isDark ? 'bg-white/8 text-[#00E8FF] border border-white/12' : 'bg-white/85 text-[#0052CC] border border-white/60 shadow-sm'
                     }`}>
                       {groupNotes.length}
                     </span>
@@ -183,19 +191,19 @@ export const NoteList: React.FC<NoteListProps> = ({
                         transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
                         className="overflow-hidden"
                       >
-                        <div className="pl-3 ml-4 mt-0.5 py-0.5 space-y-0 divide-y divide-white/5">
+                        <div className={`pl-3 ml-4 mt-0.5 py-0.5 space-y-2 divide-y ${listDividerClass}`}>
                           {groupNotes.map(note => (
                             <div 
                               key={note.id}
                               onClick={() => onSelect(note.id)}
-                              className={`group/item relative py-1 pl-3 pr-2 cursor-pointer transition-all duration-150 flex items-center gap-2 rounded-[12px] ${
+                              className={`group/item relative py-2 pl-3 pr-3 cursor-pointer transition-all duration-200 flex items-center gap-2 rounded-[12px] border border-transparent ${
                                 note.id === activeId 
-                                  ? activeItemClass
-                                  : `${isDark ? 'hover:bg-white/5 hover:text-blue-100' : 'hover:bg-white/70 hover:text-blue-700'}`
+                                  ? `${activeItemClass} ${isDark ? 'border-white/15' : 'border-white'}`
+                                  : `${isDark ? 'text-slate-200' : 'text-slate-700'} ${hoverItemClass}`
                               }`}
                             >
                               <SquarePen size={12} className={`shrink-0 transition-colors drop-shadow-[0_2px_8px_rgba(59,130,246,0.45)] ${
-                                note.id === activeId ? (isDark ? 'text-blue-300' : 'text-blue-500') : 'opacity-60'
+                                note.id === activeId ? (isDark ? 'text-[#00E8FF]' : 'text-[#0052CC]') : 'text-slate-400'
                               }`}/>
                               
                               <div className="min-w-0 flex-1">
@@ -209,13 +217,11 @@ export const NoteList: React.FC<NoteListProps> = ({
                               
                               <button 
                                 onClick={(e) => { e.stopPropagation(); onDelete(note.id); }}
-                                className={`opacity-0 group-hover/item:opacity-100 p-1.5 rounded-full transition-all ${
-                                    isDark ? 'hover:bg-red-500/20 text-red-400' : 'hover:bg-red-50 text-red-500'
-                                }`}
+                                className={`${liquidButtonTone} liquid-btn-icon h-8 w-8 text-[10px] opacity-0 group-hover/item:opacity-100`}
                                 title="Delete Note"
                                 type="button"
                               >
-                                <Trash size={12} />
+                                <Trash size={12} className={isDark ? 'text-red-300' : 'text-red-500'} />
                               </button>
                             </div>
                           ))}
@@ -229,7 +235,7 @@ export const NoteList: React.FC<NoteListProps> = ({
             
             {Object.keys(groupedNotes).length === 0 && (
               <div className={`text-center py-12 text-sm opacity-40`}>
-                <p>Empty Library</p>
+                <p>{searchQuery.trim() ? 'No notes match your search' : 'Empty Library'}</p>
               </div>
             )}
           </div>
@@ -237,22 +243,25 @@ export const NoteList: React.FC<NoteListProps> = ({
 
         {/* Bottom Glass Box with Action Buttons - Liquid Style */}
         <div className="p-5 z-10">
-          <div className={`grid grid-cols-4 gap-2 p-2 rounded-full border backdrop-blur-xl shadow-lg transition-colors duration-500 ${
+          <div className={`grid grid-cols-5 gap-2 p-2 rounded-full backdrop-blur-2xl shadow-lg transition-colors duration-500 ${
             isDark 
-              ? 'bg-[#1a1d28]/80 border-white/10 shadow-black/30' 
-              : 'bg-white/85 border-slate-200 shadow-blue-100/50'
+              ? 'bg-[linear-gradient(180deg,_rgba(0,18,38,0.85),_rgba(0,0,0,0.6))] shadow-[0_20px_50px_-26px_rgba(0,0,0,0.8)]' 
+              : 'bg-[linear-gradient(180deg,_rgba(255,255,255,0.9),_rgba(255,255,255,0.75))] border-white/70 shadow-[0_20px_50px_-28px_rgba(0,82,204,0.32)] border'
           }`}>
             <button type="button" onClick={onNewNote} className={actionBtnClass} title="New Note">
-              <Plus size={20} className={isDark ? 'text-blue-300' : 'text-blue-600'} />
+              <Plus size={20} className={isDark ? 'text-[#00E8FF]' : 'text-[#0052CC]'} />
             </button>
             <button type="button" onClick={onNewFolder} className={actionBtnClass} title="New Folder">
-              <FolderPlus size={20} className={isDark ? 'text-blue-300' : 'text-blue-600'} />
+              <FolderPlus size={20} className={isDark ? 'text-[#00E8FF]' : 'text-[#0052CC]'} />
             </button>
             <button type="button" onClick={onImport} className={actionBtnClass} title="Import">
-              <Upload size={20} className={isDark ? 'text-blue-300' : 'text-blue-600'} />
+              <Upload size={20} className={isDark ? 'text-[#00E8FF]' : 'text-[#0052CC]'} />
             </button>
             <button type="button" onClick={onExport} className={actionBtnClass} title="Export PDF">
-              <Download size={20} className={isDark ? 'text-blue-300' : 'text-blue-600'} />
+              <Download size={20} className={isDark ? 'text-[#00E8FF]' : 'text-[#0052CC]'} />
+            </button>
+            <button type="button" onClick={onOpenTrash} className={actionBtnClass} title="Trash">
+              <Trash size={20} className={isDark ? 'text-[#00E8FF]' : 'text-[#0052CC]'} />
             </button>
           </div>
         </div>

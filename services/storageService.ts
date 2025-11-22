@@ -1,6 +1,8 @@
 import { Note } from '../types';
 
 const STORAGE_KEY = 'glassnote_notes';
+const TRASH_KEY = 'glassnote_trash';
+const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
 export const getNotes = (): Note[] => {
   try {
@@ -38,4 +40,48 @@ export const createNewNote = (initialTitle?: string, initialContent?: string): N
     group: 'GENERAL', // Default to Uppercase
     updatedAt: Date.now(),
   };
+};
+
+const purgeExpiredTrash = (notes: Note[]): Note[] => {
+  const now = Date.now();
+  const filtered = notes.filter(note => !note.deletedAt || (now - note.deletedAt) <= THIRTY_DAYS);
+  if (filtered.length !== notes.length) {
+    localStorage.setItem(TRASH_KEY, JSON.stringify(filtered));
+  }
+  return filtered;
+};
+
+export const getTrashNotes = (): Note[] => {
+  try {
+    const stored = localStorage.getItem(TRASH_KEY);
+    const parsed: Note[] = stored ? JSON.parse(stored) : [];
+    return purgeExpiredTrash(parsed);
+  } catch (e) {
+    console.error("Failed to load trash", e);
+    return [];
+  }
+};
+
+export const moveNoteToTrash = (note: Note): Note[] => {
+  const trash = getTrashNotes();
+  const trashedNote: Note = { ...note, deletedAt: Date.now() };
+  const updated = [trashedNote, ...trash.filter(n => n.id !== note.id)];
+  localStorage.setItem(TRASH_KEY, JSON.stringify(updated));
+  return updated;
+};
+
+export const restoreNoteFromTrash = (id: string): Note | null => {
+  const trash = getTrashNotes();
+  const index = trash.findIndex(n => n.id === id);
+  if (index === -1) return null;
+  const [restored] = trash.splice(index, 1);
+  localStorage.setItem(TRASH_KEY, JSON.stringify(trash));
+  const { deletedAt, ...note } = restored;
+  return { ...note, deletedAt: undefined };
+};
+
+export const deleteTrashNote = (id: string): Note[] => {
+  const trash = getTrashNotes().filter(n => n.id !== id);
+  localStorage.setItem(TRASH_KEY, JSON.stringify(trash));
+  return trash;
 };
