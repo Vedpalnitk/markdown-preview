@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="167" height="167" viewBox="0 0 167 167" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient background -->
+  <defs>
+    <linearGradient id="grad167" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0052CC;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1A8CFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00D4FF;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow167">
+      <feDropShadow dx="0" dy="8.35" stdDeviation="5.01" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background with rounded corners -->
+  <rect width="167" height="167" rx="33.4" fill="url(#grad167)"/>
+
+  <!-- Glass note icon -->
+  <g transform="translate(33.4, 33.4)">
+    <!-- Note page -->
+    <rect x="16.7" y="8.35" width="66.8" height="83.5" rx="5.01"
+          fill="white" opacity="0.95" filter="url(#shadow167)"/>
+
+    <!-- Lines on note -->
+    <line x1="25.05" y1="25.05" x2="75.15" y2="25.05"
+          stroke="#0052CC" stroke-width="1.67" opacity="0.6"/>
+    <line x1="25.05" y1="41.75" x2="75.15" y2="41.75"
+          stroke="#0052CC" stroke-width="1.67" opacity="0.6"/>
+    <line x1="25.05" y1="58.449999999999996" x2="63.46" y2="58.449999999999996"
+          stroke="#0052CC" stroke-width="1.67" opacity="0.6"/>
+
+    <!-- Glass effect overlay -->
+    <rect x="16.7" y="8.35" width="66.8" height="41.75" rx="5.01"
+          fill="white" opacity="0.2"/>
+  </g>
+</svg>

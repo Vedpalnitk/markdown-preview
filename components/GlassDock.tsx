@@ -12,19 +12,22 @@ export const GlassDock: React.FC<GlassDockProps> = ({
   theme
 }) => {
   const isDark = theme === Theme.DARK;
-  const buttonTone = isDark ? 'liquid-btn liquid-btn-dark text-white' : 'liquid-btn liquid-btn-light text-[#0B1B40]';
 
   return (
-    <button 
+    <button
       onClick={onToggleList}
-      className={`fixed bottom-8 left-8 z-50 w-16 h-16 rounded-full ${buttonTone} liquid-btn-icon text-lg hover:scale-110 active:scale-95 group`}
+      className={`fixed bottom-6 left-6 z-50 w-12 h-12 rounded-xl flex items-center justify-center
+        transition-all duration-200 hover:scale-105 active:scale-95
+        ${isDark
+          ? 'bg-white/[0.1] hover:bg-white/[0.15] border border-white/[0.1]'
+          : 'bg-black/[0.05] hover:bg-black/[0.08] border border-black/[0.06] shadow-sm'
+        }`}
       title="Open Library"
     >
-      <span className="absolute inset-0 rounded-full border border-white/10 opacity-60 group-hover:opacity-95 transition-opacity" />
-      <Menu 
-        size={24} 
-        strokeWidth={2} 
-        className={`transition-colors duration-300 ${isDark ? 'text-[#00E8FF] group-hover:text-white' : 'text-[#0052CC] group-hover:text-[#001226]'}`} 
+      <Menu
+        size={20}
+        strokeWidth={2}
+        className={isDark ? 'text-white/80' : 'text-[#37352f]/70'}
       />
     </button>
   );

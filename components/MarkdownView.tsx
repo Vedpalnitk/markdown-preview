@@ -41,16 +41,26 @@ const cleanupContent = (text: string): string => {
 export const MarkdownView: React.FC<MarkdownViewProps> = ({ content, theme, zoom = 100 }) => {
   const isDark = theme === Theme.DARK;
   const processedContent = cleanupContent(content);
-  const baseFont = 12; // base px for preview
+  const baseFont = 14; // Reduced from 16px for more compact view
+
+  // Notion-inspired text colors
+  const textPrimary = isDark ? 'text-white/90' : 'text-[#37352f]';
+  const textSecondary = isDark ? 'text-white/60' : 'text-[#787774]';
 
   return (
-    <div style={{ fontSize: `${(zoom / 100) * baseFont}px` }} className={`prose ${isDark ? 'prose-invert text-gray-100' : 'prose-slate text-[#001226]'} max-w-none leading-relaxed
-      prose-headings:font-semibold prose-headings:mt-2 prose-headings:mb-2 prose-headings:tracking-tight
-      prose-p:my-2 prose-p:leading-relaxed
-      prose-ul:my-2 prose-ol:my-2 prose-li:marker:text-gray-400
-      prose-a:text-[#00D4FF] prose-a:no-underline hover:prose-a:text-[#00FFFF]
-      prose-strong:text-current prose-blockquote:border-l-[6px] prose-blockquote:border-[#00D4FF]/40 prose-blockquote:bg-white/5
-      prose-img:rounded-[32px]
+    <div style={{ fontSize: `${(zoom / 100) * baseFont}px` }} className={`prose ${isDark ? 'prose-invert' : 'prose-slate'} max-w-none leading-normal
+      ${textPrimary}
+      prose-headings:font-semibold prose-headings:tracking-tight
+      prose-h1:text-2xl prose-h1:mt-6 prose-h1:mb-3 prose-h1:font-bold
+      prose-h2:text-xl prose-h2:mt-5 prose-h2:mb-2
+      prose-h3:text-lg prose-h3:mt-4 prose-h3:mb-2
+      prose-p:my-2 prose-p:leading-normal
+      prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5
+      ${isDark ? 'prose-li:marker:text-white/40' : 'prose-li:marker:text-[#787774]'}
+      ${isDark ? 'prose-a:text-[#00E8FF]' : 'prose-a:text-[#0052CC]'} prose-a:no-underline hover:prose-a:underline
+      prose-strong:font-semibold
+      ${isDark ? 'prose-blockquote:border-[#00E8FF]/40' : 'prose-blockquote:border-[#0052CC]/30'} prose-blockquote:border-l-[3px] prose-blockquote:pl-4 prose-blockquote:not-italic prose-blockquote:bg-transparent
+      prose-img:rounded-lg prose-img:shadow-sm
       prose-pre:bg-transparent prose-pre:p-0 prose-pre:m-0 prose-pre:border-0
       prose-code:before:content-none prose-code:after:content-none
     `}>
@@ -78,24 +88,24 @@ export const MarkdownView: React.FC<MarkdownViewProps> = ({ content, theme, zoom
                 language={language}
                 style={isDark ? oneDark : oneLight}
                 PreTag="div"
-                className={`not-prose rounded-[32px] border shadow-sm my-8 backdrop-blur-md ${
+                className={`not-prose rounded-lg border my-4 ${
                   isDark
-                    ? 'bg-[rgba(0,18,38,0.65)] border-[#0d243c] shadow-[0_18px_36px_-24px_rgba(0,0,0,0.8)]'
-                    : 'bg-[rgba(255,255,255,0.9)] border-[#E5E7EB] shadow-[0_18px_36px_-24px_rgba(0,82,204,0.18)]'
+                    ? 'bg-[#1e1e1e] border-white/[0.08]'
+                    : 'bg-[#f7f6f3] border-[#e8e5e0]'
                 }`}
                 codeTagProps={{
                   style: {
                     backgroundColor: 'transparent',
                     textShadow: 'none',
-                    fontFamily: 'inherit',
+                    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
                   }
                 }}
                 customStyle={{
                   margin: '0',
-                  padding: '1.5rem',
+                  padding: '1rem',
                   background: 'transparent',
-                  fontSize: '0.9em',
-                  lineHeight: '1.6',
+                  fontSize: '0.875em',
+                  lineHeight: '1.7',
                 }}
               >
                 {String(codeContent).replace(/\n$/, '')}
@@ -104,54 +114,55 @@ export const MarkdownView: React.FC<MarkdownViewProps> = ({ content, theme, zoom
           },
           code({ className, children, ...props }: any) {
             return (
-              <code 
-                className={`not-prose px-2 py-1 rounded-xl font-mono text-sm font-medium border align-middle whitespace-pre-wrap break-words
-                  ${isDark 
-                    ? 'bg-white/10 text-[#00E8FF] border-[#0d243c]' 
-                    : 'bg-[#F9FDFF] text-[#0052CC] border-[#E5E7EB] shadow-[0_10px_22px_-16px_rgba(0,82,204,0.35)]'
-                  } ${className || ''}`} 
+              <code
+                className={`not-prose px-1.5 py-0.5 rounded font-mono text-[0.9em] font-normal
+                  ${isDark
+                    ? 'bg-white/[0.08] text-[#ff79c6]'
+                    : 'bg-[#f7f6f3] text-[#eb5757]'
+                  } ${className || ''}`}
                 {...props}
               >
                 {children}
               </code>
             );
           },
+          // Notion-style tables
           table: ({ children, ...props }: any) => (
-            <div className={`overflow-x-auto my-10 rounded-[32px] border shadow-sm ${
-              isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'
+            <div className={`overflow-x-auto my-6 rounded-lg border ${
+              isDark ? 'border-white/[0.08]' : 'border-[#e8e5e0]'
             }`}>
-              <table className={`min-w-full divide-y ${
-                isDark ? 'divide-white/10' : 'divide-gray-200'
+              <table className={`min-w-full ${
+                isDark ? 'divide-white/[0.06]' : 'divide-[#e8e5e0]'
               }`} {...props}>
                 {children}
               </table>
             </div>
           ),
           thead: ({ children, ...props }: any) => (
-            <thead className={isDark ? 'bg-white/10' : 'bg-gray-50'} {...props}>
+            <thead className={isDark ? 'bg-white/[0.04]' : 'bg-[#f7f6f3]'} {...props}>
               {children}
             </thead>
           ),
           tbody: ({ children, ...props }: any) => (
-            <tbody className={`divide-y ${isDark ? 'divide-white/5' : 'divide-gray-100'}`} {...props}>
+            <tbody className={`divide-y ${isDark ? 'divide-white/[0.06]' : 'divide-[#e8e5e0]'}`} {...props}>
               {children}
             </tbody>
           ),
           tr: ({ children, ...props }: any) => (
-            <tr className={`transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'}`} {...props}>
+            <tr className={`transition-colors ${isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-[#f7f6f3]/50'}`} {...props}>
               {children}
             </tr>
           ),
           th: ({ children, ...props }: any) => (
-            <th className={`px-6 py-4 text-left text-xs font-bold uppercase tracking-wider ${
-              isDark ? 'text-white' : 'text-gray-500'
+            <th className={`px-4 py-3 text-left text-sm font-semibold ${
+              isDark ? 'text-white/80' : 'text-[#37352f]'
             }`} {...props}>
               {children}
             </th>
           ),
           td: ({ children, ...props }: any) => (
-            <td className={`px-6 py-4 text-sm border-t ${
-              isDark ? 'text-gray-200 border-white/5' : 'text-gray-700 border-gray-100'
+            <td className={`px-4 py-3 text-sm ${
+              isDark ? 'text-white/70' : 'text-[#37352f]'
             }`} {...props}>
               {children}
             </td>

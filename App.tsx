@@ -5,7 +5,30 @@ import { MarkdownView } from './components/MarkdownView';
 import { GlassDock } from './components/GlassDock';
 import { TrashDrawer } from './components/TrashDrawer';
 import { NoteList } from './components/NoteList';
-import { Loader2, Folder, Sun, Moon, Eye, Pencil, FolderPlus, X, Check, Maximize2, Minimize2, ZoomIn, ZoomOut, PanelLeftClose, PanelRightOpen, Search, Menu } from 'lucide-react';
+import { ScrollProgress } from './components/ScrollProgress';
+import { TabBar } from './components/TabBar';
+import { Toolbar } from './components/Toolbar';
+import {
+  Loader2,
+  Sun,
+  Moon,
+  Eye,
+  Edit3,
+  Maximize2,
+  Minimize2,
+  Share,
+  PanelLeft,
+  PanelLeftClose,
+  Heading1,
+  Heading2,
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Link2,
+  Image,
+  CheckSquare
+} from 'lucide-react';
 
 // Declare html2pdf global
 declare const html2pdf: any;
@@ -25,13 +48,15 @@ const App: React.FC = () => {
   const [isTrashOpen, setIsTrashOpen] = useState(false);
   const [wasSidebarCollapsed, setWasSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  
+  const [tabs, setTabs] = useState<string[]>([]);
+
   // Folder Creation Modal State
   const [showFolderDialog, setShowFolderDialog] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const filteredNotes = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return notes;
@@ -54,10 +79,11 @@ const App: React.FC = () => {
     setNotes(loadedNotes);
     if (loadedNotes.length > 0) {
       setActiveNoteId(loadedNotes[0].id);
+      setTabs([loadedNotes[0].id]);
     } else {
       handleNewNote();
     }
-    
+
     setTrashNotes(getTrashNotes());
 
   }, []);
@@ -97,6 +123,14 @@ const App: React.FC = () => {
     });
   };
 
+  const selectNote = (id: string) => {
+    setActiveNoteId(id);
+    setTabs((prev) => {
+      if (prev.includes(id)) return prev;
+      return [...prev, id];
+    });
+  };
+
   const updateActiveGroup = (group: string) => {
     setNotes(prev => {
       const note = prev.find(n => n.id === activeNoteId);
@@ -124,9 +158,10 @@ const App: React.FC = () => {
     setNotes([newNote, ...notes]);
     saveNote(newNote);
     setActiveNoteId(newNote.id);
+    setTabs((prev) => [newNote.id, ...prev.filter((id) => id !== newNote.id)]);
     setViewMode(ViewMode.EDIT);
   };
-  
+
   const openFolderDialog = () => {
     // Create a new folder directly with a default name
     const folderCount = notes.filter(n => n.group?.startsWith('NEW FOLDER')).length;
@@ -150,9 +185,22 @@ const App: React.FC = () => {
     deleteNote(id);
     const remaining = notes.filter(n => n.id !== id);
     setNotes(remaining);
+    setTabs((prev) => prev.filter((tabId) => tabId !== id));
     if (activeNoteId === id) {
-      setActiveNoteId(remaining.length > 0 ? remaining[0].id : null);
+      const fallback = remaining.length > 0 ? remaining[0].id : null;
+      setActiveNoteId(fallback);
     }
+  };
+
+  const handleCloseTab = (id: string) => {
+    setTabs((prev) => {
+      const next = prev.filter((tabId) => tabId !== id);
+      if (activeNoteId === id) {
+        const fallbackId = next.length > 0 ? next[next.length - 1] : (notes[0]?.id ?? null);
+        setActiveNoteId(fallbackId);
+      }
+      return next;
+    });
   };
 
 
@@ -206,61 +254,60 @@ const App: React.FC = () => {
       }
       window.scrollTo(0, 0);
       const opt = {
-        margin: 0, 
+        margin: 0,
         filename: `${activeNote.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
           scrollY: 0,
           scrollX: 0,
-          x: 0, 
+          x: 0,
           y: 0,
           width: 794,
           windowWidth: 794
-        }, 
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] } 
+        pagebreak: { mode: ['css', 'legacy'] }
       };
       html2pdf().set(opt).from(element).save().then(() => setIsExporting(false)).catch(() => setIsExporting(false));
-    }, 1500); 
+    }, 1500);
   };
 
   const isDark = theme === Theme.DARK;
-  const liquidButtonTone = isDark ? 'liquid-btn liquid-btn-dark text-white' : 'liquid-btn liquid-btn-light text-[#0B1B40]';
 
-  // iOS 26 Liquid‑Glass background + surface tokens
-  const bgGradient = isDark
-    ? 'bg-[linear-gradient(165deg,_#001226_0%,_#001A33_55%,_#003C88_100%)]'
-    : 'bg-[linear-gradient(135deg,_#0052CC_0%,_#1A8CFF_45%,_#00D4FF_100%)]';
+  // Glassnote.ai palette inspired by the shared Figma
+  const baseBg = isDark ? 'bg-[#0f1625]' : 'bg-[#f5f7fb]';
+  const chromePanel = isDark
+    ? 'bg-white/[0.03] border border-white/[0.06] shadow-[0_18px_60px_-30px_rgba(0,0,0,0.8)]'
+    : 'bg-white border border-black/[0.05] shadow-[0_22px_70px_-34px_rgba(15,23,42,0.18)]';
+  const textPrimary = isDark ? 'text-[#d9e5f7]' : 'text-[#1f2a3d]';
+  const textSecondary = isDark ? 'text-[#9cb1d3]' : 'text-[#4a5970]';
+  const textMuted = isDark ? 'text-[#6b7b95]' : 'text-[#7c8ba5]';
+  const accentColor = isDark ? '#2b7fff' : '#2463eb';
+  const accentChip = isDark
+    ? 'bg-[rgba(43,127,255,0.15)] border border-[rgba(43,127,255,0.3)] shadow-[0_10px_24px_-14px_rgba(43,127,255,0.55)]'
+    : 'bg-[rgba(36,99,235,0.14)] border border-[rgba(36,99,235,0.24)] shadow-[0_10px_24px_-14px_rgba(36,99,235,0.35)]';
+  const mutedChip = isDark ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-white border border-black/[0.05]';
+  const iconTint = isDark ? '#c8d5e9' : '#2f3f57';
+  const placeholderClass = isDark ? 'placeholder:text-[#6b7b95]' : 'placeholder:text-[#94a3b8]';
 
-  const bgMesh = isDark
-    ? 'bg-[radial-gradient(circle_at_20%_18%,rgba(0,232,255,0.14)_0%,rgba(0,0,0,0)_42%),radial-gradient(circle_at_78%_10%,rgba(0,240,200,0.12)_0%,rgba(0,0,0,0)_38%),radial-gradient(circle_at_50%_78%,rgba(0,82,204,0.28)_0%,rgba(0,0,0,0)_45%)]'
-    : 'bg-[radial-gradient(circle_at_22%_15%,rgba(26,140,255,0.18)_0%,rgba(255,255,255,0)_42%),radial-gradient(circle_at_82%_12%,rgba(3,255,224,0.16)_0%,rgba(255,255,255,0)_40%),radial-gradient(circle_at_52%_80%,rgba(0,212,255,0.3)_0%,rgba(255,255,255,0)_48%)]';
+  const formattedDate = activeNote
+    ? new Date(activeNote.updatedAt).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    })
+    : '';
 
-  const panelShell = isDark
-    ? 'bg-[linear-gradient(145deg,_rgba(10,10,10,0.35),_rgba(0,0,0,0.55))] border border-[#0f1d2f] text-slate-100 shadow-[0_28px_80px_-38px_rgba(0,0,0,0.85)] ring-1 ring-[#0a1624]'
-    : 'bg-[linear-gradient(145deg,_rgba(255,255,255,0.85),_rgba(255,255,255,0.65))] border border-white/70 text-[#001226] shadow-[0_32px_90px_-45px_rgba(0,82,204,0.35)] ring-1 ring-white/80';
-
-  const docHeaderClass = isDark
-    ? 'relative overflow-hidden bg-[linear-gradient(140deg,_rgba(0,8,20,0.85),_rgba(0,18,38,0.65))] border-[#0d243c] shadow-[0_26px_70px_-34px_rgba(0,0,0,0.85)] backdrop-blur-[32px] backdrop-saturate-150 ring-1 ring-[#031025] text-white'
-    : 'relative overflow-hidden bg-[linear-gradient(140deg,_rgba(255,255,255,0.92),_rgba(255,255,255,0.7))] border-[#DAE4F5]/80 shadow-[0_24px_70px_-32px_rgba(0,82,204,0.25)] backdrop-blur-[28px] ring-1 ring-white/70 text-[#001226]';
-
-  const docHeaderGlow = isDark
-    ? 'bg-[radial-gradient(circle_at_18%_20%,rgba(0,232,255,0.2),transparent),radial-gradient(circle_at_80%_5%,rgba(0,82,204,0.25),transparent)]'
-    : 'bg-[radial-gradient(circle_at_15%_20%,rgba(26,140,255,0.15),transparent),radial-gradient(circle_at_85%_0%,rgba(3,255,224,0.18),transparent)]';
-
-  const docBodyClass = isDark
-    ? 'bg-[rgba(0,8,20,0.9)] text-slate-100'
-    : 'bg-white text-[#001226]';
-
-  const controlButtonClass = `${liquidButtonTone} liquid-btn-icon h-9 w-9 font-semibold text-[11px]`;
-
-  const chipClass = `px-3 py-2 rounded-[18px] text-xs font-semibold tracking-wide border flex items-center justify-center ring-1 ${
-    isDark
-      ? 'bg-[#071426]/70 border-[#0d243c] ring-[#031025] text-[#00E8FF] shadow-[0_14px_32px_-18px_rgba(0,0,0,0.75)]'
-      : 'bg-[linear-gradient(145deg,_#fdfdff,_#eef2ff)] border-[#dfe7fb] ring-white/70 text-[#0052CC] shadow-[0_16px_40px_-24px_rgba(0,82,204,0.35)]'
-  }`;
+  const tags = activeNote
+    ? [
+      (activeNote.group || 'general').toLowerCase(),
+      ...(activeNote.title ? activeNote.title.toLowerCase().split(' ').slice(0, 2) : [])
+    ]
+    : [];
 
   const handleRestoreFromTrash = (id: string) => {
     const restored = restoreNoteFromTrash(id);
@@ -284,70 +331,74 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  const controlGroupClass = `flex items-center gap-1.5 rounded-full border px-2.5 py-1 backdrop-blur ring-1 ${
-    isDark
-      ? 'border-white/10 bg-[linear-gradient(150deg,_rgba(0,18,38,0.88),_rgba(0,26,51,0.7))] ring-white/12 shadow-[0_20px_55px_-28px_rgba(0,0,0,0.65)]'
-      : 'border-white/70 bg-[linear-gradient(135deg,_rgba(255,255,255,0.95),_rgba(255,255,255,0.75))] ring-white/80 shadow-[0_22px_52px_-30px_rgba(0,82,204,0.36)]'
-  }`;
 
-  const searchInputClass = `min-w-[160px] w-full rounded-full pl-8 pr-3 h-9 text-xs font-semibold outline-none border ring-1 transition-all duration-300 ${
-    isDark
-      ? 'bg-[#071426]/70 border-[#0d243c] ring-[#031025] text-white placeholder:text-white/60 focus:border-[#00E8FF]'
-      : 'bg-[linear-gradient(145deg,_#ffffff,_#eef4ff)] border-[#dfe7fb] ring-white/70 text-[#0052CC] placeholder:text-slate-400 shadow-[0_16px_40px_-24px_rgba(0,82,204,0.35)] focus:border-[#0052CC]'
-  }`;
+
+  const toggleFullScreen = () => {
+    setIsFullScreen(prev => {
+      if (!prev) {
+        setWasSidebarCollapsed(isSidebarCollapsed);
+        setIsSidebarCollapsed(true);
+        setIsListOpen(false);
+      } else {
+        setIsSidebarCollapsed(wasSidebarCollapsed);
+      }
+      return !prev;
+    });
+  };
 
   return (
-    <div className={`min-h-screen w-full relative ${bgGradient} transition-colors duration-700 overflow-hidden selection:bg-[#00D4FF]/30 selection:text-[#001226]`}>
-      <div className={`pointer-events-none absolute inset-0 overflow-hidden ${bgMesh}`}>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.08)_1px,_transparent_1px)] [background-size:18px_18px]" />
-        <div className={`absolute -left-24 top-16 w-80 h-80 rounded-full blur-[120px] opacity-70 ${isDark ? 'bg-[#003C88]/60' : 'bg-[#03FFE0]/50'}`} />
-        <div className={`absolute right-[-12%] -top-10 w-[420px] h-[420px] rounded-full blur-[120px] opacity-70 ${isDark ? 'bg-[#00E8FF]/50' : 'bg-[#F9FDFF]/70'}`} />
-        <div className={`absolute inset-x-0 bottom-[-32%] h-[460px] blur-[120px] opacity-60 ${isDark ? 'bg-[linear-gradient(160deg,_rgba(0,18,38,0.9),_rgba(0,0,0,0.75))]' : 'bg-[linear-gradient(150deg,_rgba(255,255,255,0.65),_rgba(255,255,255,0.25))]'}`} />
+    <div className={`min-h-screen w-full relative overflow-hidden ${baseBg} transition-colors duration-300`}>
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-40 -top-48 size-[520px] bg-[radial-gradient(circle_at_center,rgba(43,127,255,0.16),transparent_60%)] blur-[120px]" />
+        <div className="absolute right-[-140px] top-[-100px] size-[540px] bg-[radial-gradient(circle_at_center,rgba(110,216,255,0.18),transparent_60%)] blur-[130px]" />
+        <div className="absolute bottom-[-180px] right-[-120px] size-[520px] bg-[radial-gradient(circle_at_center,rgba(65,142,255,0.24),transparent_60%)] blur-[120px]" />
       </div>
-      
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleFileChange} 
-        accept=".md,.txt,.markdown" 
+
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept=".md,.txt,.markdown"
         multiple
-        className="hidden" 
+        className="hidden"
       />
 
-
+      {/* PDF Export Overlay */}
       {isExporting && activeNote && (
         <div className="absolute top-0 left-0 z-[9999] bg-white w-full min-h-screen">
-           <style>
+          <style>
             {`
               #pdf-content { width: 794px; padding: 20mm; background: white; color: black !important; position: absolute; top: 0; left: 0; }
               #pdf-content * { color: black !important; text-shadow: none !important; }
               #pdf-content .prose p, #pdf-content .prose ul, #pdf-content .prose ol, #pdf-content .prose li, #pdf-content .prose table, #pdf-content .katex-display { page-break-inside: avoid !important; }
             `}
-           </style>
-           <div className="fixed top-5 right-5 bg-black/80 text-white px-6 py-3 rounded-full backdrop-blur-md shadow-xl z-[10000] flex items-center gap-3 border border-white/10">
-              <Loader2 className="animate-spin" size={20} />
-              <span className="font-medium">Generating PDF...</span>
-           </div>
-           <div id="pdf-content">
-              <div className="prose prose-slate max-w-none">
-                <div className="mb-8 border-b border-gray-200 pb-4">
-                  <h1 className="text-4xl font-bold mb-2 leading-tight">{activeNote.title}</h1>
-                  <p className="text-gray-500 text-sm">{new Date(activeNote.updatedAt).toLocaleDateString()} • {activeNote.group}</p>
-                </div>
-                <MarkdownView content={activeNote.content} theme={Theme.LIGHT} />
+          </style>
+          <div className="fixed top-5 right-5 bg-black/80 text-white px-6 py-3 rounded-lg backdrop-blur-md shadow-xl z-[10000] flex items-center gap-3">
+            <Loader2 className="animate-spin" size={20} />
+            <span className="font-medium text-sm">Generating PDF...</span>
+          </div>
+          <div id="pdf-content">
+            <div className="prose prose-slate max-w-none">
+              <div className="mb-8 border-b border-gray-200 pb-4">
+                <h1 className="text-4xl font-bold mb-2 leading-tight">{activeNote.title}</h1>
+                <p className="text-gray-500 text-sm">{new Date(activeNote.updatedAt).toLocaleDateString()} • {activeNote.group}</p>
               </div>
-           </div>
+              <MarkdownView content={activeNote.content} theme={Theme.LIGHT} />
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Main Layout */}
       {!isExporting && (
-        <div className="md:flex md:items-start md:gap-6 h-screen px-2 md:px-6 py-4 md:pb-10">
+        <div className="relative flex h-screen gap-4 px-4 py-4">
+          {/* Desktop Sidebar */}
           {!isSidebarCollapsed && (
-            <div className="hidden md:flex md:flex-col">
-              <NoteList 
+            <div className="hidden md:block w-[240px] shrink-0">
+              <NoteList
                 notes={filteredNotes}
                 activeId={activeNoteId || ''}
-                onSelect={(id) => setActiveNoteId(id)}
+                onSelect={(id) => selectNote(id)}
                 onDelete={handleDeleteNote}
                 onNewNote={handleNewNote}
                 onNewFolder={openFolderDialog}
@@ -355,7 +406,7 @@ const App: React.FC = () => {
                 onExport={handleExportPdf}
                 onOpenTrash={() => setIsTrashOpen(true)}
                 isOpen={true}
-                onClose={() => {}}
+                onClose={() => { }}
                 theme={theme}
                 pinned
                 searchQuery={searchQuery}
@@ -363,146 +414,193 @@ const App: React.FC = () => {
             </div>
           )}
 
-          <main className={`h-screen md:h-auto md:min-h-[calc(100vh-160px)] w-full overflow-hidden pt-0 pb-6 transition-all duration-500 md:flex-1 md:self-start`}>
-            <div className={`${isFullScreen ? 'max-w-6xl' : 'max-w-5xl'} mx-auto h-full transition-all duration-500 flex flex-col min-h-0`}>
-
-              {activeNote ? (
-                <div className={`backdrop-blur-[26px] rounded-[20px] shadow-xl border transition-all duration-500 flex-1 relative overflow-hidden flex flex-col min-h-0 ${panelShell}`}>
-                <div className={`sticky top-0 z-10 border-b pb-3 pt-4 px-5 md:px-8 ${docHeaderClass}`}>
-                  <div className={`absolute inset-0 pointer-events-none opacity-60 ${docHeaderGlow}`} />
-                  <div className="relative z-10 flex flex-col gap-4">
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6">
-                      <div className="flex flex-col gap-1 min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setIsSidebarCollapsed(prev => !prev)}
-                            className={`${controlButtonClass} !h-7 !w-7 hidden md:inline-flex`}
-                            title={isSidebarCollapsed ? 'Show Library' : 'Hide Library'}
-                          >
-                            {isSidebarCollapsed ? <PanelRightOpen size={12} /> : <PanelLeftClose size={12} />}
-                          </button>
-                          {isMobile && (
-                            <button
-                              type="button"
-                              onClick={() => setIsListOpen(true)}
-                              className={`${controlButtonClass} !h-7 !w-7 inline-flex md:hidden`}
-                              title="Open Library"
-                            >
-                              <Menu size={12} />
-                            </button>
-                          )}
-                          <Folder size={16} className={isDark ? 'text-[#00E8FF]' : 'text-[#0052CC]'} />
+          {/* Main Content Area */}
+          <main className="flex-1 min-w-0">
+            <div className={`relative flex h-full flex-col overflow-hidden rounded-3xl backdrop-blur-2xl ${chromePanel}`}>
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_15%,rgba(255,255,255,0.05),transparent_45%)]" />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(43,127,255,0.08),transparent_38%)]" />
+              <div className="relative flex h-full flex-col">
+                {activeNote ? (
+                  <>
+                    <div className="px-4 pt-3 flex items-center gap-3">
+                      <TabBar
+                        tabs={tabs}
+                        notes={notes}
+                        activeId={activeNoteId}
+                        onSelect={selectNote}
+                        onClose={handleCloseTab}
+                        theme={theme}
+                      />
+                      <Toolbar
+                        theme={theme}
+                        onToggleTheme={() => setTheme(isDark ? Theme.LIGHT : Theme.DARK)}
+                        onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
+                        activeNote={activeNote}
+                        onExport={handleExportPdf}
+                        onImport={handleImportClick}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-3 px-6 pt-5 pb-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            if (isMobile) {
+                              setIsListOpen(true);
+                            } else {
+                              setIsSidebarCollapsed(prev => !prev);
+                            }
+                          }}
+                          className={`h-8 w-8 rounded-full flex items-center justify-center ${mutedChip} transition-all duration-150 hover:scale-105 hover:border-white/20 hover:bg-white/[0.08]`}
+                          style={{ color: iconTint }}
+                          title={isSidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+                          type="button"
+                        >
+                          {isSidebarCollapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
+                        </button>
+                        <span className={`px-3 py-1 text-[12px] rounded-full ${mutedChip}`}>
                           <input
                             type="text"
-                            value={activeNote.group || 'GENERAL'}
+                            value={activeNote.group || ''}
                             onChange={(e) => updateActiveGroup(e.target.value)}
-                            className={`bg-transparent outline-none uppercase tracking-[0.14em] text-[12px] font-semibold w-44 focus:ring-0 ${isDark ? 'text-slate-100' : 'text-slate-700'} placeholder:text-white/50`}
-                            placeholder="GROUP"
+                            className={`bg-transparent outline-none w-[120px] text-ellipsis ${textSecondary}`}
+                            placeholder="General"
                           />
-                        </div>
+                        </span>
                         <input
                           type="text"
                           value={activeNote.title}
-                          className={`bg-transparent text-xl md:text-2xl font-semibold outline-none truncate w-full bg-clip-text leading-tight tracking-tight px-0 ${
-                            isDark 
-                              ? 'text-white drop-shadow-[0_6px_18px_rgba(0,0,0,0.45)]' 
-                              : 'text-slate-900'
-                          }`}
                           onChange={(e) => updateActiveTitle(e.target.value)}
+                          className={`px-3 py-1 text-[14px] rounded-full font-semibold outline-none w-[240px] ${accentChip}`}
+                          style={{ color: accentColor, background: 'rgba(43,127,255,0.1)' }}
+                          placeholder="Untitled"
                         />
                       </div>
-                      <div className="flex flex-wrap items-center justify-end gap-3 lg:flex-none">
-                        <div className={controlGroupClass}>
+                      <div className="flex items-center gap-2">
+                        {[Heading1, Heading2, Bold, Italic, List, ListOrdered, Link2, Image, CheckSquare].map((IconComp, idx) => (
                           <button
-                            onClick={() => setZoom(Math.max(50, zoom - 10))}
-                            className={`${controlButtonClass} !h-9 !w-9`}
-                            title="Zoom Out"
+                            key={idx}
+                            className={`h-8 w-8 rounded-full flex items-center justify-center ${mutedChip} transition-all duration-150 hover:scale-105 hover:border-white/20 hover:bg-white/[0.08]`}
+                            style={{ color: iconTint }}
+                            title="Formatting control"
+                            type="button"
                           >
-                            <ZoomOut size={18} strokeWidth={2.2} />
+                            <IconComp size={14} strokeWidth={1.8} />
                           </button>
-                          <span className={`${chipClass} !h-7 px-2.5`}>{zoom}%</span>
-                          <button
-                            onClick={() => setZoom(Math.min(200, zoom + 10))}
-                            className={`${controlButtonClass} !h-9 !w-9`}
-                            title="Zoom In"
-                          >
-                            <ZoomIn size={18} strokeWidth={2.2} />
-                          </button>
-                        </div>
-                        <div className={controlGroupClass}>
-                          <button
-                            onClick={() => setViewMode(viewMode === ViewMode.EDIT ? ViewMode.PREVIEW : ViewMode.EDIT)}
-                            className={`${controlButtonClass} !h-9 !w-9`}
-                            title="Toggle View Mode"
-                          >
-                            {viewMode === ViewMode.EDIT ? <Eye size={18} strokeWidth={2.2} /> : <Pencil size={18} strokeWidth={2.2} />}
-                          </button>
-                          <button
-                            onClick={toggleFullScreen}
-                            className={`${controlButtonClass} !h-9 !w-9`}
-                            title="Toggle Full Screen"
-                          >
-                            {isFullScreen ? <Minimize2 size={18} strokeWidth={2.2} /> : <Maximize2 size={18} strokeWidth={2.2} />}
-                          </button>
-                        </div>
-                        <div className="relative">
-                          <Search size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-white/60' : 'text-slate-400'}`} />
+                        ))}
+                        <button
+                          onClick={() => setViewMode(viewMode === ViewMode.EDIT ? ViewMode.PREVIEW : ViewMode.EDIT)}
+                          className={`h-8 rounded-full px-3 text-[12px] font-medium transition-all duration-150 flex items-center gap-2 ${viewMode === ViewMode.PREVIEW ? accentChip : mutedChip}`}
+                          style={{ color: viewMode === ViewMode.PREVIEW ? accentColor : iconTint }}
+                          title={viewMode === ViewMode.EDIT ? 'Preview' : 'Edit'}
+                          type="button"
+                        >
+                          {viewMode === ViewMode.PREVIEW ? <Eye size={14} /> : <Edit3 size={14} />}
+                          {viewMode === ViewMode.PREVIEW ? 'Preview' : 'Edit'}
+                        </button>
+                        <button
+                          onClick={() => setTheme(isDark ? Theme.LIGHT : Theme.DARK)}
+                          className={`h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150 ${mutedChip} hover:scale-105 hover:border-white/20 hover:bg-white/[0.08]`}
+                          style={{ color: accentColor }}
+                          title="Toggle theme"
+                          type="button"
+                        >
+                          {isDark ? <Sun size={15} /> : <Moon size={15} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 px-6 pb-4 text-[13px]">
+                      {formattedDate && (
+                        <span className={`flex items-center gap-2 ${textSecondary}`}>
+                          <Calendar size={12} />
+                          {formattedDate}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-2 overflow-x-auto">
+                        {tags.map((tag, idx) => (
+                          <span key={`${tag}-${idx}`} className={`px-2 py-1 rounded-full text-[12px] capitalize ${mutedChip} ${textSecondary}`}>
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div ref={contentRef} className="flex-1 overflow-y-auto px-6 pb-6">
+                      <div className={`rounded-2xl border backdrop-blur-xl px-6 py-5 ${mutedChip} bg-[#0f1625]/60`}>
+                        <div className="flex items-center justify-between gap-2">
                           <input
-                            type="search"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search"
-                            className={`${searchInputClass} lg:w-56`}
+                            type="text"
+                            value={activeNote.title}
+                            onChange={(e) => updateActiveTitle(e.target.value)}
+                            className={`bg-transparent text-2xl md:text-3xl font-semibold outline-none flex-1 min-w-0 leading-tight ${textPrimary}`}
+                            placeholder="Weekly Team Sync"
                           />
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={toggleFullScreen}
+                              className={`h-9 w-9 rounded-full flex items-center justify-center transition-all duration-150 ${mutedChip} hover:scale-105 hover:border-white/20 hover:bg-white/[0.08]`}
+                              style={{ color: iconTint }}
+                              title={isFullScreen ? 'Exit fullscreen' : 'Fullscreen'}
+                              type="button"
+                            >
+                              {isFullScreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                            </button>
+                            <button
+                              className={`h-9 w-9 rounded-full flex items-center justify-center transition-all duration-150 ${mutedChip} hover:scale-105 hover:border-white/20 hover:bg-white/[0.08]`}
+                              style={{ color: iconTint }}
+                              type="button"
+                              onClick={() => handleExportPdf()}
+                              title="Export PDF"
+                            >
+                              <Share size={16} />
+                            </button>
+                          </div>
+                        </div>
+                        <p className={`mt-2 text-sm ${textMuted}`}>
+                          {formattedDate ? `Last edited ${formattedDate}` : 'Start a new note'}
+                        </p>
+                        <div className="mt-4">
+                          {viewMode === ViewMode.EDIT ? (
+                            <textarea
+                              style={{ fontSize: `${(zoom / 100) * 15}px` }}
+                              className={`w-full min-h-[60vh] outline-none resize-none leading-relaxed bg-transparent ${textPrimary} ${placeholderClass}`}
+                              placeholder="Start writing..."
+                              value={activeNote.content}
+                              onChange={(e) => updateActiveNote(e.target.value)}
+                              spellCheck={false}
+                            />
+                          ) : (
+                            <MarkdownView content={activeNote.content} theme={theme} zoom={zoom} />
+                          )}
                         </div>
                       </div>
                     </div>
+                  </>
+                ) : (
+                  <div className="flex flex-1 items-center justify-center">
+                    <div className={`text-center ${textMuted}`}>
+                      <div className={`w-16 h-16 rounded-xl mx-auto mb-4 flex items-center justify-center ${mutedChip}`}>
+                        <Edit3 size={28} />
+                      </div>
+                      <p className="text-lg font-medium mb-1">No note selected</p>
+                      <p className="text-sm">Select a note from the sidebar or create a new one</p>
+                    </div>
                   </div>
-                </div>
-
-                  <div className={`flex-1 min-h-0 max-h-full px-6 md:px-10 pb-10 pt-6 ${docBodyClass} overflow-y-auto`} id="markdown-content-area">
-                    {viewMode === ViewMode.EDIT ? (
-                      <textarea
-                        style={{ fontSize: `${(zoom / 100) * 12}px` }}
-                        className={`w-full min-h-[70vh] outline-none resize-none font-mono leading-relaxed placeholder:opacity-40 bg-transparent ${
-                          isDark 
-                            ? 'text-slate-100 caret-[#00E8FF]'
-                            : 'text-[#001226] caret-[#0052CC]'
-                        }`}
-                        placeholder="Start typing your markdown..."
-                        value={activeNote.content}
-                        onChange={(e) => updateActiveNote(e.target.value)}
-                        spellCheck={false}
-                      />
-                    ) : (
-                      <MarkdownView content={activeNote.content} theme={theme} zoom={zoom} />
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className={`flex flex-col items-center justify-center h-[80vh] text-center opacity-90 ${isDark ? 'text-[#00E8FF]/80' : 'text-[#0052CC]/80'}`}>
-                  <div className={`mb-4 p-6 rounded-[32px] backdrop-blur-xl border ${
-                    isDark ? 'bg-[rgba(0,18,38,0.7)] border-white/12 shadow-[0_18px_36px_-24px_rgba(0,0,0,0.8)]' : 'bg-[rgba(255,255,255,0.75)] border-white/70 shadow-[0_18px_36px_-24px_rgba(0,82,204,0.25)]'
-                  }`}>
-                    <Folder size={48} strokeWidth={1.5} />
-                  </div>
-                  <p className="text-lg font-medium tracking-tight">Select a note from the library</p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </main>
         </div>
       )}
 
-      {/* Mobile overlay sidebar */}
+      {/* Mobile Sidebar Overlay */}
       {!isExporting && (
         <div className="md:hidden">
-          <NoteList 
+          <NoteList
             notes={filteredNotes}
             activeId={activeNoteId || ''}
-            onSelect={(id) => { 
-              setActiveNoteId(id); 
+            onSelect={(id) => {
+              selectNote(id);
               setIsListOpen(false);
             }}
             onDelete={handleDeleteNote}
@@ -520,27 +618,22 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Mobile Dock */}
       {!isExporting && !isListOpen && !isFullScreen && (
         <div className="md:hidden">
-          <GlassDock 
+          <GlassDock
             onToggleList={() => setIsListOpen(true)}
             theme={theme}
           />
         </div>
       )}
 
-      {/* Theme toggle - bottom right glass icon */}
-      {!isExporting && (
-        <button
-          onClick={() => setTheme(isDark ? Theme.LIGHT : Theme.DARK)}
-          className={`fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full ${liquidButtonTone} liquid-btn-icon text-base hover:scale-[1.04]`}
-          title="Toggle theme"
-        >
-          {isDark ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
+      {/* Scroll Progress Indicator */}
+      {!isExporting && activeNote && (
+        <ScrollProgress contentRef={contentRef} theme={theme} />
       )}
 
-      <TrashDrawer 
+      <TrashDrawer
         notes={trashNotes}
         isOpen={isTrashOpen}
         onClose={() => setIsTrashOpen(false)}
@@ -553,15 +646,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-  const toggleFullScreen = () => {
-    setIsFullScreen(prev => {
-      if (!prev) {
-        setWasSidebarCollapsed(isSidebarCollapsed);
-        setIsSidebarCollapsed(true);
-        setIsListOpen(false);
-      } else {
-        setIsSidebarCollapsed(wasSidebarCollapsed);
-      }
-      return !prev;
-    });
-  };
